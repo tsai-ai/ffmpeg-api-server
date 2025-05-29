@@ -30,4 +30,5 @@ app.post('/generate', upload.fields([
 });
 
 app.use('/video', express.static(path.join(__dirname, 'public')));
-app.listen(3000, () => console.log('API running on port 3000'));
+app.listen(8080, () => console.log('API running on port 8080'));
+
