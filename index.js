@@ -43,4 +43,34 @@ app.post(
   }
 );
 
+
+app.post('/merge', express.json(), async (req, res) => {
+  const files = req.body.files; // e.g., ["public/output-1.mp4", "public/output-2.mp4"]
+
+  if (!files || !Array.isArray(files) || files.length < 2) {
+    return res.status(400).send('請提供至少兩個影片路徑');
+  }
+
+  // 生成合併清單檔
+  const listFilePath = path.join(__dirname, 'uploads', `merge-list-${Date.now()}.txt`);
+  const listContent = files.map(file => `file '${path.resolve(file).replace(/\\/g, '/')}'`).join('\n');
+  fs.writeFileSync(listFilePath, listContent);
+
+  const output = `merged-${Date.now()}.mp4`;
+  const outputPath = path.join(__dirname, 'public', output);
+
+  const cmd = `ffmpeg -f concat -safe 0 -i "${listFilePath}" -c copy "${outputPath}"`;
+
+  console.log('合併指令：', cmd);
+
+  exec(cmd, (err, stdout, stderr) => {
+    if (err) {
+      console.error('FFmpeg stderr:', stderr);
+      return res.status(500).send('影片合併失敗');
+    }
+
+    res.json({ url: `/video/${output}` });
+  });
+});
+
 app.listen(8080, () => console.log('API running on port 8080'));
