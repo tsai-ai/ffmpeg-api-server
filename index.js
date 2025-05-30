@@ -20,18 +20,23 @@ app.post(
     const subtitle = req.files['subtitle'][0];
     const output = `output-${Date.now()}.mp4`;
 
-  const cmd = `ffmpeg -y -loop 1 -i ${image.path} -i ${audio.path} -vf "subtitles=xxx.srt:force_style='FontName=NotoSansCJKtc-Regular,Fontsize=24'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest public/${output}`;
+    // 讓路徑支援中文與空格
+    const imagePath = image.path.replace(/\\/g, '/');
+    const audioPath = audio.path.replace(/\\/g, '/');
+    const subtitlePath = subtitle.path.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'");
 
+    const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" -vf "subtitles='${subtitlePath}':force_style='FontName=NotoSansCJKtc-Regular,Fontsize=24'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest public/${output}`;
+
+    console.log('Executing FFmpeg command:\n', cmd);
 
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
-        console.error(stderr);
+        console.error('FFmpeg stderr:', stderr);
         return res.status(500).send('FFmpeg failed');
       }
 
-      // 將影片檔案以 binary 回傳
       const filePath = path.join(__dirname, 'public', output);
-      res.download(filePath); // 或使用 res.sendFile(filePath);
+      res.download(filePath); // or res.sendFile(filePath);
     });
   }
 );
