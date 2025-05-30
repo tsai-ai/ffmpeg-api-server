@@ -20,7 +20,8 @@ app.post(
     const subtitle = req.files['subtitle'][0];
     const output = `output-${Date.now()}.mp4`;
 
-    const cmd = `ffmpeg -y -loop 1 -i ${image.path} -i ${audio.path} -vf "subtitles=${subtitle.path}:force_style='Fontsize=24'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest public/${output}`;
+  const cmd = `ffmpeg -y -loop 1 -i ${image.path} -i ${audio.path} -vf "subtitles=${subtitle.path}:force_style='FontName=DejaVuSans,Fontsize=24'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest public/${output}`;
+
 
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
