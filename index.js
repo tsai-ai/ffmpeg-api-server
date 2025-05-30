@@ -25,8 +25,8 @@ app.post(
     const audioPath = audio.path.replace(/\\/g, '/');
     const subtitlePath = subtitle.path.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'");
 
-    const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" -vf "subtitles='${subtitlePath}':force_style='FontName=NotoSansCJKtc-Regular,Fontsize=20,WrapStyle=0,MarginV=80,Alignment=2'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest public/${output}`;
 
+	const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" -vf "scale=1080:1920,subtitles='${subtitlePath}':force_style='FontName=NotoSansCJKtc-Regular,Fontsize=22,WrapStyle=0,MarginV=100,Alignment=2'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest public/${output}`;
 
     console.log('Executing FFmpeg command:\n', cmd);
 
