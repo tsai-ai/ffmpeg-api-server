@@ -32,53 +32,88 @@ const resolveProjectFile = (file) => {
   return path.join(__dirname, normalized);
 };
 
-const subtitleStyle = [
-  'PlayResX=1920',
-  'PlayResY=1080',
-  'FontName=NotoSansCJKtc-Regular',
-  'Fontsize=18',
-  'WrapStyle=2',
-  'Alignment=2',
-  'MarginL=140',
-  'MarginR=140',
-  'MarginV=55',
-  'Outline=2',
-  'Shadow=0',
-  'BorderStyle=1',
-  'PrimaryColour=&H00FFFFFF',
-  'OutlineColour=&H00000000',
-].join(',');
+const audioLeadInMs = 300;
+
+const wrapText = (text, lineLength = 22, maxLines = 3) => {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+
+  const chars = Array.from(normalized);
+  const lines = [];
+  let current = '';
+
+  for (const char of chars) {
+    current += char;
+    if (current.length >= lineLength) {
+      lines.push(current);
+      current = '';
+    }
+  }
+
+  if (current) lines.push(current);
+
+  if (lines.length <= maxLines) {
+    return lines.join('\n');
+  }
+
+  const limited = lines.slice(0, maxLines);
+  limited[maxLines - 1] = `${limited[maxLines - 1].slice(0, Math.max(0, lineLength - 1))}…`;
+  return limited.join('\n');
+};
+
+const escapeDrawtext = (text) => String(text || '')
+  .replace(/\\/g, '\\\\')
+  .replace(/'/g, "\\'")
+  .replace(/:/g, '\\:')
+  .replace(/%/g, '\\%')
+  .replace(/\n/g, '\\\\n');
 
 app.post(
   '/generate',
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
-    { name: 'subtitle', maxCount: 1 },
+    { name: 'bgm', maxCount: 1 },
   ]),
   async (req, res) => {
     const image = req.files?.image?.[0];
     const audio = req.files?.audio?.[0];
-    const subtitle = req.files?.subtitle?.[0];
+    const bgm = req.files?.bgm?.[0];
+    const subtitleText = req.body?.subtitleText || '';
 
-    if (!image || !audio || !subtitle) {
-      return res.status(400).json({ error: 'image, audio, subtitle are required' });
+    if (!image || !audio) {
+      return res.status(400).json({ error: 'image and audio are required' });
     }
 
     const output = ensureMp4Name(req.body?.outputName, `output-${Date.now()}`);
 
     const imagePath = image.path.replace(/\\/g, '/');
     const audioPath = audio.path.replace(/\\/g, '/');
-    const subtitlePath = subtitle.path.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'");
     const outputPath = path.join(__dirname, 'public', output).replace(/\\/g, '/');
+    const wrappedSubtitle = escapeDrawtext(wrapText(subtitleText));
 
-    const videoFilter = [
+    const videoFilters = [
       'scale=1920:1080:force_original_aspect_ratio=decrease',
       'pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black',
-      `subtitles='${subtitlePath}':force_style='${subtitleStyle}'`,
-    ].join(',');
+    ];
 
-    const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" -vf "${videoFilter}" -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p -c:a aac -b:a 192k -map 0:v:0 -map 1:a:0 -shortest "${outputPath}"`;
+    if (wrappedSubtitle) {
+      videoFilters.push('drawbox=x=140:y=h-230:w=w-280:h=150:color=black@0.52:t=fill');
+      videoFilters.push(`drawtext=font='NotoSansCJKtc-Regular':text='${wrappedSubtitle}':fontcolor=white:fontsize=26:line_spacing=8:x=(w-text_w)/2:y=h-195`);
+    }
+
+    const inputArgs = [`-loop 1 -i "${imagePath}"`, `-i "${audioPath}"`];
+    let audioFilter = `[1:a]adelay=${audioLeadInMs}:all=1[voice]`;
+    let audioMap = '"[voice]"';
+
+    if (bgm) {
+      const bgmPath = bgm.path.replace(/\\/g, '/');
+      inputArgs.push(`-stream_loop -1 -i "${bgmPath}"`);
+      audioFilter += `;[2:a]volume=0.12[bgm];[voice][bgm]amix=inputs=2:duration=first:dropout_transition=0[aout]`;
+      audioMap = '"[aout]"';
+    }
+
+    const cmd = `ffmpeg -y ${inputArgs.join(' ')} -vf "${videoFilters.join(',')}" -filter_complex "${audioFilter}" -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p -c:a aac -b:a 192k -map 0:v:0 -map ${audioMap} -shortest "${outputPath}"`;
 
     console.log('Executing FFmpeg command:\n', cmd);
 
@@ -149,4 +184,3 @@ app.post('/merge', async (req, res) => {
 });
 
 app.listen(8080, () => console.log('API running on port 8080'));
-
