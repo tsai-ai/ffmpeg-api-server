@@ -98,7 +98,7 @@ app.post(
     ];
 
     if (wrappedSubtitle) {
-      videoFilters.push('drawbox=x=140:y=h-230:w=w-280:h=150:color=black@0.52:t=fill');
+      videoFilters.push('drawbox=x=140:y=ih-230:w=iw-280:h=150:color=black@0.52:t=fill');
       videoFilters.push(`drawtext=font='NotoSansCJKtc-Regular':text='${wrappedSubtitle}':fontcolor=white:fontsize=26:line_spacing=8:x=(w-text_w)/2:y=h-195`);
     }
 
@@ -184,3 +184,4 @@ app.post('/merge', async (req, res) => {
 });
 
 app.listen(8080, () => console.log('API running on port 8080'));
+
