@@ -32,6 +32,21 @@ const resolveProjectFile = (file) => {
   return path.join(__dirname, normalized);
 };
 
+const subtitleStyle = [
+  'FontName=NotoSansCJKtc-Regular',
+  'Fontsize=15',
+  'WrapStyle=2',
+  'Alignment=2',
+  'MarginL=60',
+  'MarginR=60',
+  'MarginV=150',
+  'Outline=2',
+  'Shadow=0',
+  'BorderStyle=1',
+  'PrimaryColour=&H00FFFFFF',
+  'OutlineColour=&H00000000',
+].join(',');
+
 app.post(
   '/generate',
   upload.fields([
@@ -55,7 +70,7 @@ app.post(
     const subtitlePath = subtitle.path.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'");
     const outputPath = path.join(__dirname, 'public', output).replace(/\\/g, '/');
 
-    const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" -vf "scale=1080:1920,subtitles='${subtitlePath}':force_style='FontName=NotoSansCJKtc-Regular,Fontsize=20,WrapStyle=0,Alignment=2,MarginV=100'" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -shortest "${outputPath}"`;
+    const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -i "${audioPath}" -vf "scale=1080:1920,subtitles='${subtitlePath}':force_style='${subtitleStyle}'" -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p -c:a aac -b:a 192k -map 0:v:0 -map 1:a:0 -shortest "${outputPath}"`;
 
     console.log('Executing FFmpeg command:\n', cmd);
 
