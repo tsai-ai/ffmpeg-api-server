@@ -36,7 +36,7 @@ const subtitleStyle = [
   'PlayResX=1920',
   'PlayResY=1080',
   'FontName=NotoSansCJKtc-Regular',
-  'Fontsize=13',
+  'Fontsize=18',
   'WrapStyle=2',
   'Alignment=2',
   'MarginL=140',
@@ -149,3 +149,4 @@ app.post('/merge', async (req, res) => {
 });
 
 app.listen(8080, () => console.log('API running on port 8080'));
+
