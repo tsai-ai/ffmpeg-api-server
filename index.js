@@ -33,6 +33,7 @@ const resolveProjectFile = (file) => {
 };
 
 const audioLeadInMs = 300;
+const subtitleFontFile = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc';
 
 const wrapText = (text, lineLength = 22, maxLines = 3) => {
   const normalized = String(text || '').replace(/\s+/g, ' ').trim();
@@ -66,7 +67,7 @@ const escapeDrawtext = (text) => String(text || '')
   .replace(/'/g, "\\'")
   .replace(/:/g, '\\:')
   .replace(/%/g, '\\%')
-  .replace(/\n/g, '\\\\n');
+  .replace(/\n/g, '\\n');
 
 app.post(
   '/generate',
@@ -99,7 +100,7 @@ app.post(
 
     if (wrappedSubtitle) {
       videoFilters.push('drawbox=x=140:y=ih-230:w=iw-280:h=150:color=black@0.52:t=fill');
-      videoFilters.push(`drawtext=font='NotoSansCJKtc-Regular':text='${wrappedSubtitle}':fontcolor=white:fontsize=26:line_spacing=8:x=(w-text_w)/2:y=h-195`);
+      videoFilters.push(`drawtext=fontfile='${subtitleFontFile}':text='${wrappedSubtitle}':fontcolor=white:fontsize=26:line_spacing=8:x=(w-text_w)/2:y=h-195`);
     }
 
     const inputArgs = [`-loop 1 -i "${imagePath}"`, `-i "${audioPath}"`];
@@ -184,4 +185,3 @@ app.post('/merge', async (req, res) => {
 });
 
 app.listen(8080, () => console.log('API running on port 8080'));
-
