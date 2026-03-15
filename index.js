@@ -75,18 +75,38 @@ const escapeDrawtext = (text) => String(text || '')
   .replace(/%/g, '\\%')
   .replace(/\n/g, '\\n');
 
+const subtitleFileToText = (filePath) => {
+  if (!filePath || !fs.existsSync(filePath)) return '';
+
+  return fs.readFileSync(filePath, 'utf8')
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n\r?\n+/)
+    .map((block) => block
+      .split(/\r?\n/)
+      .slice(2)
+      .join(' ')
+      .trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 app.post(
   '/generate',
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
+    { name: 'subtitle', maxCount: 1 },
     { name: 'bgm', maxCount: 1 },
   ]),
   async (req, res) => {
     const image = req.files?.image?.[0];
     const audio = req.files?.audio?.[0];
+    const subtitle = req.files?.subtitle?.[0];
     const bgm = req.files?.bgm?.[0];
-    const subtitleText = req.body?.subtitleText || '';
+    const subtitleText = String(req.body?.subtitleText || '').trim();
 
     if (!image || !audio) {
       return res.status(400).json({ error: 'image and audio are required' });
@@ -97,7 +117,8 @@ app.post(
     const imagePath = image.path.replace(/\\/g, '/');
     const audioPath = audio.path.replace(/\\/g, '/');
     const outputPath = path.join(__dirname, 'public', output).replace(/\\/g, '/');
-    const wrappedSubtitle = escapeDrawtext(wrapText(subtitleText));
+    const derivedSubtitleText = subtitleText || subtitleFileToText(subtitle?.path);
+    const wrappedSubtitle = escapeDrawtext(wrapText(derivedSubtitleText));
 
     const videoFilters = [
       'scale=1920:1080:force_original_aspect_ratio=decrease',
