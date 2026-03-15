@@ -8,7 +8,13 @@ const app = express();
 const upload = multer({ dest: 'uploads/' });
 
 app.use(express.json({ limit: '2mb' }));
-app.use('/video', express.static(path.join(__dirname, 'public')));
+const PUBLIC_DIR = path.join(__dirname, 'public');
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/video', express.static(PUBLIC_DIR));
+app.get('/health', (req, res) => res.status(200).json({ ok: true }));
+app.get('/', (req, res) => res.status(200).send('ok'));
 
 const sanitizeBaseName = (value, fallback) => {
   const cleaned = String(value || fallback || 'output')
@@ -184,6 +190,7 @@ app.post('/merge', async (req, res) => {
   });
 });
 
-const PORT = Number(process.env.PORT) || 8080;
+const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log('API running on port ' + PORT));
+
 
