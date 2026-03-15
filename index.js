@@ -184,4 +184,6 @@ app.post('/merge', async (req, res) => {
   });
 });
 
-app.listen(8080, () => console.log('API running on port 8080'));
+const PORT = Number(process.env.PORT) || 8080;
+app.listen(PORT, '0.0.0.0', () => console.log('API running on port ' + PORT));
+
